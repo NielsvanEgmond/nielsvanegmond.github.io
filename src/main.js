@@ -220,7 +220,11 @@ function bendPolygon(W, H, side, d, steps = 32) {
   // slide: px the whole block travels as well (for blocks without spring room).
   // stiffness: spring strength; higher is quicker.
   const SPRING = 40;
+  // fadeIn: the block fades in on load (see the browser-bar colour block above) instead of
+  // springing in, but still bounces again whenever it comes back into view.
   const configs = [
+    { sel: '.site-header', when: (el) => !!el.closest('.header-band'), side: 'bottom', rest: [SPRING, 16 + SPRING], tilt: 3, stiffness: 190, fadeIn: true },
+    { sel: '.hero-text', media: '(max-width: 767px)', side: 'bottom', rest: [16 + SPRING, SPRING], tilt: 4, stiffness: 150, fadeIn: true },
     { sel: '.hero-orange', media: '(min-width: 768px)', side: 'left', rest: [16 + SPRING, SPRING], tilt: -6, stiffness: 150, leadsReel: true },
     { sel: '.site-footer', side: 'top', rest: [20 + SPRING, SPRING], tilt: -3, stiffness: 170 },
     { sel: '.panel', side: 'right', rest: null, tilt: 5, slide: 36, stiffness: 170 },
@@ -283,7 +287,11 @@ function bendPolygon(W, H, side, d, steps = 32) {
   };
   const hide = (b) => { measure(b); draw(b, 0, 0); };
   const finish = (b) => { b.done = true; b.el.style.clipPath = ''; b.el.style.transform = ''; if (b.leadsReel && reelColumn) reelColumn.style.transform = ''; };
-  blocks.forEach((b) => { if (armed(b)) hide(b); else { b.done = true; b.wasOff = true; } });
+  blocks.forEach((b) => {
+    if (!armed(b)) { b.done = true; b.wasOff = true; }
+    else if (b.fadeIn) { b.done = true; b.start = 0; measure(b); } // no entrance; re-bounce only
+    else hide(b);
+  });
   takeOver();
 
   // A damped spring pulls the edge from 0 (hidden) to 1 (resting), overshooting about
@@ -473,7 +481,7 @@ function bendPolygon(W, H, side, d, steps = 32) {
   addEventListener('hashchange', () => requestAnimationFrame(() => blocks.forEach((b) => {
     if (b.when) {
       const on = armed(b);
-      if (on && b.wasOff) { b.start = null; b.done = false; hide(b); }
+      if (on && b.wasOff && !b.fadeIn) { b.start = null; b.done = false; hide(b); }
       b.wasOff = !on;
       if (!on) { b.el.style.clipPath = ''; return; }
     }
