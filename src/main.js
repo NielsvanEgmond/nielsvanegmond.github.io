@@ -9,9 +9,10 @@
   const main = document.querySelector('main');
   const footer = document.querySelector('.site-footer');
   if (!main || !footer) return;
-  // On load, the colour block at the top fades in instead of popping in: the blue header band
-  // on subpages (the top colour eases in with it from white; the body starts white in
-  // styles.css), and on phones the home page's stacked blue/orange hero.
+  // On load, the colour block at the top springs in (see the entrances below) while it fades
+  // in, and the top colour eases in with it from white (the body starts white in styles.css),
+  // so no flat block of colour shows before it: the blue header band on subpages, and on
+  // phones the home page's stacked blue/orange hero.
   const band = document.querySelector('.header-band .site-header');
   const phoneHero = matchMedia('(max-width: 767px)').matches ? document.querySelector('.hero') : null;
   const fading = [band, phoneHero].filter(Boolean);
@@ -62,22 +63,20 @@
   update();
 
   if (intro < 1) {
-    // Start once the page has loaded (at most 1.5 s), like the other entrances.
-    new Promise((r) => {
-      if (document.readyState === 'complete') r(); else addEventListener('load', r, { once: true });
-      setTimeout(r, 1500);
-    }).then(() => new Promise((r) => setTimeout(r, 120))).then(() => {
-      const t0 = performance.now(), MS = 550;
+    // Start together with the entrances (main.js dispatches 'entrances-start').
+    document.addEventListener('entrances-start', () => {
+      const t0 = performance.now(), MS = 600;
       const step = (now) => {
         const t = Math.min(1, (now - t0) / MS);
         intro = 1 - (1 - t) ** 3; // ease out
-        fading.forEach((el) => { el.style.opacity = String(intro); });
+        fading.forEach((el) => { el.style.opacity = String(Math.min(1, t * 3)); }); // quick fade
+
         update();
         if (t < 1) requestAnimationFrame(step);
         else fading.forEach((el) => { el.style.opacity = ''; });
       };
       requestAnimationFrame(step);
-    });
+    }, { once: true });
     setTimeout(() => { intro = 1; fading.forEach((el) => { el.style.opacity = ''; }); queue(); }, 4000); // safety net
   }
 })();
@@ -220,11 +219,9 @@ function bendPolygon(W, H, side, d, steps = 32) {
   // slide: px the whole block travels as well (for blocks without spring room).
   // stiffness: spring strength; higher is quicker.
   const SPRING = 40;
-  // fadeIn: the block fades in on load (see the browser-bar colour block above) instead of
-  // springing in, but still bounces again whenever it comes back into view.
   const configs = [
-    { sel: '.site-header', when: (el) => !!el.closest('.header-band'), side: 'bottom', rest: [SPRING, 16 + SPRING], tilt: 3, stiffness: 190, fadeIn: true },
-    { sel: '.hero-text', media: '(max-width: 767px)', side: 'bottom', rest: [16 + SPRING, SPRING], tilt: 4, stiffness: 150, fadeIn: true },
+    { sel: '.site-header', when: (el) => !!el.closest('.header-band'), side: 'bottom', rest: [SPRING, 16 + SPRING], tilt: 3, stiffness: 190 },
+    { sel: '.hero-text', media: '(max-width: 767px)', side: 'bottom', rest: [16 + SPRING, SPRING], tilt: 4, stiffness: 150 },
     { sel: '.hero-orange', media: '(min-width: 768px)', side: 'left', rest: [16 + SPRING, SPRING], tilt: -6, stiffness: 150, leadsReel: true },
     { sel: '.site-footer', side: 'top', rest: [20 + SPRING, SPRING], tilt: -3, stiffness: 170 },
     { sel: '.panel', side: 'right', rest: null, tilt: 5, slide: 36, stiffness: 170 },
@@ -287,11 +284,7 @@ function bendPolygon(W, H, side, d, steps = 32) {
   };
   const hide = (b) => { measure(b); draw(b, 0, 0); };
   const finish = (b) => { b.done = true; b.el.style.clipPath = ''; b.el.style.transform = ''; if (b.leadsReel && reelColumn) reelColumn.style.transform = ''; };
-  blocks.forEach((b) => {
-    if (!armed(b)) { b.done = true; b.wasOff = true; }
-    else if (b.fadeIn) { b.done = true; b.start = 0; measure(b); } // no entrance; re-bounce only
-    else hide(b);
-  });
+  blocks.forEach((b) => { if (armed(b)) hide(b); else { b.done = true; b.wasOff = true; } });
   takeOver();
 
   // A damped spring pulls the edge from 0 (hidden) to 1 (resting), overshooting about
@@ -374,6 +367,7 @@ function bendPolygon(W, H, side, d, steps = 32) {
     .then(() => Promise.race([document.fonts?.ready, new Promise((r) => setTimeout(r, 500))]))
     .then(() => new Promise((r) => setTimeout(r, 250)))
     .then(() => {
+      document.dispatchEvent(new Event('entrances-start')); // the top colour fades in now
       addEventListener('scroll', queue, { passive: true });
       requestAnimationFrame(check);
     });
@@ -481,7 +475,7 @@ function bendPolygon(W, H, side, d, steps = 32) {
   addEventListener('hashchange', () => requestAnimationFrame(() => blocks.forEach((b) => {
     if (b.when) {
       const on = armed(b);
-      if (on && b.wasOff && !b.fadeIn) { b.start = null; b.done = false; hide(b); }
+      if (on && b.wasOff) { b.start = null; b.done = false; hide(b); }
       b.wasOff = !on;
       if (!on) { b.el.style.clipPath = ''; return; }
     }

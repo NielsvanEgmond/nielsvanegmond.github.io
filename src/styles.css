@@ -397,7 +397,7 @@ section:has(.row-contrib) + .pager { padding-top: 110px; }
 .js-anim .hero-orange, .js-anim .site-footer, .js-anim .panel, .js-anim .skill-tile {
   clip-path: inset(0 0 100% 0); animation: failsafe-show 0s 5s forwards;
 }
-/* The subpage header band fades in instead (main.js). */
+/* The subpage header band also fades in while it springs in (main.js). */
 .js-anim .header-band .site-header { opacity: 0; animation: failsafe-opacity 0s 5s forwards; }
 @keyframes failsafe-opacity { to { opacity: 1; } }
 @media (max-width: 767px) {
