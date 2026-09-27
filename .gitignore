@@ -1,0 +1,7 @@
+# Build output (GitHub Actions builds dist/ on every push)
+dist/
+artifact/
+# Local tooling
+.claude/
+.DS_Store
+node_modules/
