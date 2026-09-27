@@ -46,7 +46,6 @@
    to their slanted edges are white. */
 html:has(.header-band) { background: var(--blue); }
 body { background: var(--bg); position: relative; }
-body.header-band { background: var(--blue); }
 main { background: var(--bg); }
 .header-plain .site-header { background: var(--bg); }
 .header-plain main { margin-bottom: -80px; padding-bottom: 73px; }
@@ -395,12 +394,14 @@ section:has(.row-contrib) + .pager { padding-top: 110px; }
    The html element gets .js-anim in <head> (motion allowed). main.js hides these blocks
    itself, springs them in, and removes .js-anim; this only covers the first paint so
    they don't flash. If main.js never runs, the failsafe shows them after 5 s. */
-.js-anim .hero-orange, .js-anim.header-band .site-header, .js-anim .header-band .site-header,
-.js-anim .site-footer, .js-anim .panel, .js-anim .skill-tile {
+.js-anim .hero-orange, .js-anim .site-footer, .js-anim .panel, .js-anim .skill-tile {
   clip-path: inset(0 0 100% 0); animation: failsafe-show 0s 5s forwards;
 }
+/* The subpage header band fades in instead (main.js). */
+.js-anim .header-band .site-header { opacity: 0; animation: failsafe-opacity 0s 5s forwards; }
+@keyframes failsafe-opacity { to { opacity: 1; } }
 @media (max-width: 767px) {
-  .js-anim .hero-text { clip-path: inset(0 0 100% 0); animation: failsafe-show 0s 5s forwards; }
+  .js-anim .hero { opacity: 0; animation: failsafe-opacity 0s 5s forwards; } /* fades in (main.js) */
 }
 @keyframes failsafe-show { to { clip-path: none; } }
 /* Desktop: the teaser rides in with the orange block, so it waits off-screen too. */

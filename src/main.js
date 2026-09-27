@@ -9,7 +9,16 @@
   const main = document.querySelector('main');
   const footer = document.querySelector('.site-footer');
   if (!main || !footer) return;
-  const startColour = getComputedStyle(body).backgroundColor;  // the page's top colour (styles.css)
+  // On load, the colour block at the top fades in instead of popping in: the blue header band
+  // on subpages (the top colour eases in with it from white; the body starts white in
+  // styles.css), and on phones the home page's stacked blue/orange hero.
+  const band = document.querySelector('.header-band .site-header');
+  const phoneHero = matchMedia('(max-width: 767px)').matches ? document.querySelector('.hero') : null;
+  const fading = [band, phoneHero].filter(Boolean);
+  const startColour = getComputedStyle(band ?? body).backgroundColor;  // the page's top colour
+  const still = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  let intro = fading.length && !still ? 0 : 1;
+  if (intro < 1) fading.forEach((el) => { el.style.opacity = '0'; });
   const pageColour = getComputedStyle(main).backgroundColor;   // white
   const footerColour = getComputedStyle(footer).backgroundColor;
   // Most specific first: on phones the hero's blue text block sits inside the orange hero.
@@ -22,7 +31,8 @@
   const opaque = (c) => c && c !== 'transparent' && !/rgba\(.*,\s*0\)$/.test(c);
 
   // Colour at the top of the screen, from the blocks' resting positions (not animations).
-  const topColour = () => {
+  const topColour = () => (intro < 1 ? mix(pageColour, topColourAtRest(), intro) : topColourAtRest());
+  const topColourAtRest = () => {
     if (scrollY <= 0) return startColour;
     let best = null, dist = Infinity;
     for (const b of topBlocks) {
@@ -50,6 +60,26 @@
   addEventListener('resize', queue);
   addEventListener('load', queue);
   update();
+
+  if (intro < 1) {
+    // Start once the page has loaded (at most 1.5 s), like the other entrances.
+    new Promise((r) => {
+      if (document.readyState === 'complete') r(); else addEventListener('load', r, { once: true });
+      setTimeout(r, 1500);
+    }).then(() => new Promise((r) => setTimeout(r, 120))).then(() => {
+      const t0 = performance.now(), MS = 550;
+      const step = (now) => {
+        const t = Math.min(1, (now - t0) / MS);
+        intro = 1 - (1 - t) ** 3; // ease out
+        fading.forEach((el) => { el.style.opacity = String(intro); });
+        update();
+        if (t < 1) requestAnimationFrame(step);
+        else fading.forEach((el) => { el.style.opacity = ''; });
+      };
+      requestAnimationFrame(step);
+    });
+    setTimeout(() => { intro = 1; fading.forEach((el) => { el.style.opacity = ''; }); queue(); }, 4000); // safety net
+  }
 })();
 
 // Lightbox: any element with data-youtube or data-image opens in the shared <dialog>.
@@ -191,9 +221,7 @@ function bendPolygon(W, H, side, d, steps = 32) {
   // stiffness: spring strength; higher is quicker.
   const SPRING = 40;
   const configs = [
-    { sel: '.site-header', when: (el) => !!el.closest('.header-band'), side: 'bottom', rest: [SPRING, 16 + SPRING], tilt: 3, stiffness: 190 },
     { sel: '.hero-orange', media: '(min-width: 768px)', side: 'left', rest: [16 + SPRING, SPRING], tilt: -6, stiffness: 150, leadsReel: true },
-    { sel: '.hero-text', media: '(max-width: 767px)', side: 'bottom', rest: [16 + SPRING, SPRING], tilt: 4, stiffness: 150, leadsReel: true },
     { sel: '.site-footer', side: 'top', rest: [20 + SPRING, SPRING], tilt: -3, stiffness: 170 },
     { sel: '.panel', side: 'right', rest: null, tilt: 5, slide: 36, stiffness: 170 },
     { sel: '.skill-tile', side: 'top', rest: null, tilt: -6, slide: 28, stiffness: 220, stagger: 50 },
