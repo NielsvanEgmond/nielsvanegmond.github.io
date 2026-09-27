@@ -227,9 +227,11 @@ function bendPolygon(W, H, side, d, steps = 32) {
   // the 40px spring room (null = no clip at rest). tilt: starting tilt in degrees.
   // slide: px the whole block travels as well (for blocks without spring room).
   // stiffness: spring strength; higher is quicker.
+  // first: starts on the first frame, together with the browser's page fade-in, instead of
+  // waiting for the page to load.
   const SPRING = 40;
   const configs = [
-    { sel: '.site-header', when: (el) => !!el.closest('.header-band'), side: 'bottom', rest: [SPRING, 16 + SPRING], tilt: 3, stiffness: 190 },
+    { sel: '.site-header', when: (el) => !!el.closest('.header-band'), side: 'bottom', rest: [SPRING, 16 + SPRING], tilt: 3, stiffness: 190, first: true },
     { sel: '.hero-text', media: '(max-width: 767px)', side: 'bottom', rest: [16 + SPRING, SPRING], tilt: 4, stiffness: 150 },
     { sel: '.hero-orange', media: '(min-width: 768px)', side: 'left', rest: [16 + SPRING, SPRING], tilt: -6, stiffness: 150, leadsReel: true },
     { sel: '.site-footer', side: 'top', rest: [20 + SPRING, SPRING], tilt: -3, stiffness: 170 },
@@ -372,6 +374,7 @@ function bendPolygon(W, H, side, d, steps = 32) {
     if (document.readyState === 'complete') r(); else addEventListener('load', r, { once: true });
     setTimeout(r, 1500);
   });
+  requestAnimationFrame(() => blocks.filter((b) => b.first).forEach(play));
   loaded
     .then(() => Promise.race([document.fonts?.ready, new Promise((r) => setTimeout(r, 500))]))
     .then(() => new Promise((r) => setTimeout(r, 250)))
