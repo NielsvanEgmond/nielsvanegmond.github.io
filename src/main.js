@@ -9,13 +9,17 @@
   const main = document.querySelector('main');
   const footer = document.querySelector('.site-footer');
   if (!main || !footer) return;
-  // On load, the colour block at the top springs in (see the entrances below) while it fades
-  // in, and the top colour eases in with it from white (the body starts white in styles.css),
-  // so no flat block of colour shows before it: the blue header band on subpages, and on
-  // phones the home page's stacked blue/orange hero.
+  // On load: subpages start with the band's blue in Safari's status-bar area (a solid block
+  // Safari draws in the page colour), and the band springs down out of it; the page under
+  // the band is white (styles.css). On phones the home page's stacked hero fades in while
+  // its blue block springs in.
   const band = document.querySelector('.header-band .site-header');
   const phoneHero = matchMedia('(max-width: 767px)').matches ? document.querySelector('.hero') : null;
-  const fading = [band, phoneHero].filter(Boolean);
+  const fading = [phoneHero].filter(Boolean);
+  // Let main (white) reach up to the top of the page under the header band (styles.css).
+  const setHeaderH = () => band && root.style.setProperty('--header-h', `${band.offsetHeight}px`);
+  setHeaderH();
+  addEventListener('resize', setHeaderH);
   const startColour = getComputedStyle(band ?? body).backgroundColor;  // the page's top colour
   const still = matchMedia('(prefers-reduced-motion: reduce)').matches;
   let intro = fading.length && !still ? 0 : 1;
@@ -65,17 +69,17 @@
   if (intro < 1) {
     // Start together with the entrances (main.js dispatches 'entrances-start').
     document.addEventListener('entrances-start', () => {
-      // One fade drives both: the block's opacity over the white page and the top colour mixed
-      // from white by the same amount give the same colour, so no edge shows between them.
-      // Safari draws its bar colour ~3 frames late (measured in the simulator), so the colour
-      // runs LEAD ms ahead of the block's opacity to arrive at the same time.
-      const t0 = performance.now(), MS = 280, LEAD = 130;
-      const ease = (x) => 1 - (1 - Math.min(1, Math.max(0, x))) ** 2; // ease out
+      // Two steps that never overlap, so no edge can show between two blues: first the block
+      // springs and fades in while the browser bar stays white (Safari draws a soft white haze
+      // over its top), then the bar colour eases to the block's colour, melting the haze away.
+      // (Changing both at once can't stay in sync: Safari animates its bar colour with a lag.)
+      const t0 = performance.now(), FADE = 450, TINT = 500;
+      const ease = (x) => { const u = Math.min(1, Math.max(0, x)); return u * u * (3 - 2 * u); }; // ease in-out
       const step = (now) => {
-        const t = (now - t0) / MS;
-        intro = ease(t + LEAD / MS);
-        const o = ease(t);
-        fading.forEach((el) => { el.style.opacity = String(o); });
+        const ms = now - t0;
+        const t = ms / (FADE + TINT);
+        fading.forEach((el) => { el.style.opacity = String(ease(ms / FADE)); });
+        intro = ease((ms - FADE) / TINT);
         update();
         if (t < 1) requestAnimationFrame(step);
         else fading.forEach((el) => { el.style.opacity = ''; });
