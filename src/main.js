@@ -65,12 +65,17 @@
   if (intro < 1) {
     // Start together with the entrances (main.js dispatches 'entrances-start').
     document.addEventListener('entrances-start', () => {
-      const t0 = performance.now(), MS = 600;
+      // One fade drives both: the block's opacity over the white page and the top colour mixed
+      // from white by the same amount give the same colour, so no edge shows between them.
+      // Safari draws its bar colour ~3 frames late (measured in the simulator), so the colour
+      // runs LEAD ms ahead of the block's opacity to arrive at the same time.
+      const t0 = performance.now(), MS = 280, LEAD = 130;
+      const ease = (x) => 1 - (1 - Math.min(1, Math.max(0, x))) ** 2; // ease out
       const step = (now) => {
-        const t = Math.min(1, (now - t0) / MS);
-        intro = 1 - (1 - t) ** 3; // ease out
-        fading.forEach((el) => { el.style.opacity = String(Math.min(1, t * 3)); }); // quick fade
-
+        const t = (now - t0) / MS;
+        intro = ease(t + LEAD / MS);
+        const o = ease(t);
+        fading.forEach((el) => { el.style.opacity = String(o); });
         update();
         if (t < 1) requestAnimationFrame(step);
         else fading.forEach((el) => { el.style.opacity = ''; });
