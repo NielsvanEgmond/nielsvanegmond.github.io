@@ -339,6 +339,8 @@ async function build() {
   await cp('assets', join(OUT, 'assets'), { recursive: true });
   await cp('src/styles.css', join(OUT, 'assets/styles.css'));
   await cp('src/main.js', join(OUT, 'assets/main.js'));
+  // Side projects (e.g. games/tinymergeauto/): prebuilt static folders, published as-is and not linked from the site.
+  await cp('games', join(OUT, 'games'), { recursive: true }).catch(() => {});
 
   await page('/', homePage());
   await page('/about-me/', aboutPage());

@@ -12,6 +12,9 @@ npm run build   # build into dist/
 - `src/styles.css`, `src/main.js`: styles, video pop-up, testimonial carousel, springy block animations.
 - `assets/`: self-hosted fonts, images, the teaser loop and the CV PDF.
 
+- `games/`: side projects as prebuilt static folders, copied into `dist/games/` as-is and not linked from the site
+  (e.g. `/games/tinymergeauto/`; rebuild it from the TinyMergeAuto repo with `python3 tools/bundle.py <path>/games/tinymergeauto --pages`).
+
 URLs match the previous site (`/about-me/`, `/projects/…`, `/hard-skills/…`), so existing links keep working.
 
 ## Hosting (GitHub Pages)
